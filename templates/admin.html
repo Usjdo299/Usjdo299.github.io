@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم — {{ c.siteTitle }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2efe8; --panel: #fffdf9; --ink: #22241f; --dim: #6b675c;
+    --accent: #9a7434; --line: rgba(34,36,31,0.12); --ease: cubic-bezier(0.22,1,0.36,1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Tajawal", sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; }
+
+  header.topbar {
+    position: sticky; top: 0; z-index: 60; background: rgba(242,239,232,0.9); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line); padding: 14px 22px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .topbar h1 { font-size: 1.05rem; font-weight: 700; }
+  .topbar .spacer { flex: 1; }
+  .tbtn {
+    padding: 9px 18px; border-radius: 100px; border: 1px solid var(--line); background: transparent;
+    font-family: inherit; font-size: 0.85rem; font-weight: 500; color: var(--ink); cursor: pointer;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+    transition: all 0.3s var(--ease);
+  }
+  .tbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .tbtn.primary { background: var(--ink); color: #f7f4ee; border-color: var(--ink); }
+  .tbtn.primary:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tbtn.danger:hover { border-color: #a03428; color: #a03428; }
+
+  .layout { display: grid; grid-template-columns: minmax(340px, 460px) 1fr; min-height: calc(100vh - 60px); }
+
+  .controls { padding: 26px 22px 80px; overflow-y: auto; }
+  details.group {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    margin-bottom: 14px; overflow: hidden;
+  }
+  details.group summary {
+    cursor: pointer; padding: 16px 18px; font-weight: 700; font-size: 0.95rem; list-style: none;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  details.group summary::after { content: "＋"; color: var(--accent); font-weight: 400; transition: transform 0.3s var(--ease); }
+  details.group[open] summary::after { transform: rotate(45deg); }
+  .group-body { padding: 4px 18px 20px; }
+
+  label.f { display: block; margin-bottom: 14px; }
+  label.f span { display: block; font-size: 0.8rem; font-weight: 500; color: var(--dim); margin-bottom: 6px; }
+  input[type="text"], textarea, select {
+    width: 100%; padding: 11px 14px; border: 1px solid rgba(34,36,31,0.18); border-radius: 10px;
+    font-family: inherit; font-size: 0.92rem; background: #fff; color: var(--ink);
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+  textarea { min-height: 84px; resize: vertical; line-height: 1.6; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(154,116,52,0.15); }
+  input[type="color"] { width: 52px; height: 38px; border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 4px; cursor: pointer; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .mini-card { border: 1px dashed rgba(34,36,31,0.22); border-radius: 12px; padding: 14px; margin-bottom: 12px; background: rgba(34,36,31,0.02); }
+  .mini-card .mini-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 0.82rem; font-weight: 700; color: var(--dim); }
+  .rm { border: none; background: none; color: #a03428; cursor: pointer; font-size: 0.8rem; font-family: inherit; }
+  .add-btn {
+    width: 100%; padding: 11px; border: 1px dashed var(--accent); border-radius: 10px; background: none;
+    color: var(--accent); font-family: inherit; font-size: 0.88rem; font-weight: 500; cursor: pointer;
+    transition: background 0.25s ease;
+  }
+  .add-btn:hover { background: rgba(154,116,52,0.08); }
+
+  .preview-pane { border-right: none; border-left: 1px solid var(--line); background: #e7e2d7; display: flex; flex-direction: column; position: sticky; top: 60px; height: calc(100vh - 60px); }
+  .preview-bar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
+  .preview-bar .lbl { font-size: 0.82rem; color: var(--dim); font-weight: 500; }
+  .devbtns { display: flex; background: rgba(34,36,31,0.06); border-radius: 100px; padding: 3px; }
+  .devbtns button {
+    border: none; background: none; padding: 6px 16px; border-radius: 100px; cursor: pointer;
+    font-family: inherit; font-size: 0.8rem; color: var(--dim); transition: all 0.25s ease;
+  }
+  .devbtns button.active { background: #fff; color: var(--ink); box-shadow: 0 2px 6px rgba(34,36,31,0.12); }
+  .preview-wrap { flex: 1; display: flex; justify-content: center; padding: 0 18px 18px; overflow: hidden; }
+  .preview-frame-holder {
+    width: 100%; max-width: 100%; background: #fff; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 24px 60px -30px rgba(34,36,31,0.35); transition: max-width 0.4s var(--ease);
+  }
+  .preview-frame-holder.mobile { max-width: 390px; }
+  iframe { width: 100%; height: 100%; border: none; display: block; }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 100;
+    background: var(--ink); color: #f7f4ee; padding: 14px 22px; border-radius: 12px;
+    font-size: 0.9rem; box-shadow: 0 18px 40px -18px rgba(34,36,31,0.5);
+    opacity: 0; transform: translateY(12px); transition: all 0.4s var(--ease); pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.err { background: #a03428; }
+
+  .note { font-size: 0.78rem; color: var(--dim); line-height: 1.7; background: rgba(154,116,52,0.07); border: 1px solid rgba(154,116,52,0.18); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .preview-pane { position: static; height: 70vh; border-left: none; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <h1>لوحة تحكم الموقع</h1>
+  <div class="spacer"></div>
+  <a class="tbtn" href="/" target="_blank" rel="noopener">فتح الموقع ↗</a>
+  <button class="tbtn danger" id="resetBtn" type="button">استعادة الافتراضي</button>
+  <button class="tbtn primary" id="saveBtn" type="button">حفظ التغييرات</button>
+  <a class="tbtn" href="/admin/logout">خروج</a>
+</header>
+
+<div class="layout">
+  <div class="controls">
+    <div class="note">أي تعديل هنا يظهر مباشرة في المعاينة على اليسار. ما ينشر للزوار إلا بعد ما تضغط «حفظ التغييرات».</div>
+
+    <details class="group" open>
+      <summary>الهوية والرئيسية</summary>
+      <div class="group-body">
+        <label class="f"><span>عنوان الصفحة (يظهر بتبويب المتصفح)</span><input type="text" data-key="siteTitle"></label>
+        <div class="row2">
+          <label class="f"><span>الاسم الأول</span><input type="text" data-key="firstName"></label>
+          <label class="f"><span>الاسم الثاني</span><input type="text" data-key="lastName"></label>
+        </div>
+        <label class="f"><span>الاسم بالعربي</span><input type="text" data-key="arabicName"></label>
+        <label class="f"><span>السطر الصغير فوق الاسم</span><input type="text" data-key="kicker"></label>
+        <label class="f"><span>النبذة الرئيسية</span><textarea data-key="bio"></textarea></label>
+        <label class="f"><span>لون التمييز</span><input type="color" data-key="accent"></label>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>قسم «من أنا»</summary>
+      <div class="group-body">
+        <label class="f"><span>عنوان القسم</span><input type="text" data-key="aboutTitle"></label>
+        <label class="f"><span>الفقرة الأولى</span><textarea data-key="aboutP1"></textarea></label>
+        <label class="f"><span>الفقرة الثانية</span><textarea data-key="aboutP2"></textarea></label>
+        <div class="row2">
+          <label class="f"><span>الموقع (معلومة)</span><input type="text" data-key="factLocation"></label>
+          <label class="f"><span>المجال (معلومة)</span><input type="text" data-key="factCraft"></label>
+        </div>
+        <label class="f"><span>يتعلم حالياً (معلومة)</span><input type="text" data-key="factLearning"></label>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>بطاقات «شنو أسوي»</summary>
+      <div class="group-body">
+        <label class="f"><span>عنوان القسم</span><input type="text" data-key="focusTitle"></label>
+        <div id="cardsEditor"></div>
+        <button class="add-btn" id="addCard" type="button">＋ إضافة بطاقة</button>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>التواصل والروابط</summary>
+      <div class="group-body">
+        <label class="f"><span>عنوان قسم التواصل</span><input type="text" data-key="contactTitle"></label>
+        <label class="f"><span>نص قسم التواصل</span><textarea data-key="contactText"></textarea></label>
+        <div id="linksEditor"></div>
+        <button class="add-btn" id="addLink" type="button">＋ إضافة رابط</button>
+      </div>
+    </details>
+
+    <details class="group">
+      <summary>التذييل</summary>
+      <div class="group-body">
+        <label class="f"><span>العبارة العربية</span><input type="text" data-key="footerAr"></label>
+        <label class="f"><span>سطر الحقوق</span><input type="text" data-key="footerText"></label>
+      </div>
+    </details>
+  </div>
+
+  <div class="preview-pane">
+    <div class="preview-bar">
+      <span class="lbl">معاينة حية</span>
+      <div class="devbtns">
+        <button type="button" data-dev="desktop" class="active">كمبيوتر</button>
+        <button type="button" data-dev="mobile">موبايل</button>
+      </div>
+    </div>
+    <div class="preview-wrap">
+      <div class="preview-frame-holder" id="frameHolder">
+        <iframe id="previewFrame" src="/" title="معاينة الموقع"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  "use strict";
+  var content = {{ c | tojson }};
+  var frame = document.getElementById("previewFrame");
+  var holder = document.getElementById("frameHolder");
+  var toast = document.getElementById("toast");
+  var toastTimer = null;
+
+  var ICON_OPTIONS = [
+    ["code", "برمجة </>"], ["globe", "تقنية 🌐"], ["car", "سيارة"], ["cpu", "شريحة"],
+    ["pin", "موقع"], ["star", "نجمة"], ["book", "كتاب"], ["github", "GitHub"],
+    ["mail", "بريد"], ["link", "رابط"]
+  ];
+
+  function showToast(msg, isErr) {
+    toast.textContent = msg;
+    toast.classList.toggle("err", !!isErr);
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toast.classList.remove("show"); }, 2600);
+  }
+
+  // ---- bind simple fields ----
+  var fields = document.querySelectorAll("[data-key]");
+  fields.forEach(function (el) {
+    var key = el.getAttribute("data-key");
+    el.value = content[key] != null ? content[key] : "";
+    el.addEventListener("input", function () {
+      content[key] = el.value;
+      pushPreview();
+    });
+  });
+
+  function iconSelect(name, current, onChange) {
+    var sel = document.createElement("select");
+    ICON_OPTIONS.forEach(function (opt) {
+      var o = document.createElement("option");
+      o.value = opt[0]; o.textContent = opt[1];
+      if (opt[0] === current) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", function () { onChange(sel.value); pushPreview(); });
+    return sel;
+  }
+
+  // ---- cards editor ----
+  var cardsEditor = document.getElementById("cardsEditor");
+  function renderCardsEditor() {
+    cardsEditor.innerHTML = "";
+    content.cards.forEach(function (card, i) {
+      var box = document.createElement("div");
+      box.className = "mini-card";
+
+      var head = document.createElement("div");
+      head.className = "mini-head";
+      var title = document.createElement("span");
+      title.textContent = "بطاقة " + (i + 1);
+      var rm = document.createElement("button");
+      rm.className = "rm"; rm.type = "button"; rm.textContent = "حذف";
+      rm.addEventListener("click", function () { content.cards.splice(i, 1); renderCardsEditor(); pushPreview(); });
+      head.appendChild(title); head.appendChild(rm);
+      box.appendChild(head);
+
+      var row = document.createElement("div");
+      row.className = "row2";
+      var lTitle = document.createElement("label");
+      lTitle.className = "f";
+      lTitle.innerHTML = "<span>العنوان</span>";
+      var iTitle = document.createElement("input");
+      iTitle.type = "text"; iTitle.value = card.title || "";
+      iTitle.addEventListener("input", function () { card.title = iTitle.value; pushPreview(); });
+      lTitle.appendChild(iTitle);
+
+      var lIcon = document.createElement("label");
+      lIcon.className = "f";
+      lIcon.innerHTML = "<span>الأيقونة</span>";
+      lIcon.appendChild(iconSelect("card" + i, card.icon, function (v) { card.icon = v; }));
+
+      row.appendChild(lTitle); row.appendChild(lIcon);
+      box.appendChild(row);
+
+      var lText = document.createElement("label");
+      lText.className = "f";
+      lText.innerHTML = "<span>النص</span>";
+      var tText = document.createElement("textarea");
+      tText.value = card.text || "";
+      tText.addEventListener("input", function () { card.text = tText.value; pushPreview(); });
+      lText.appendChild(tText);
+      box.appendChild(lText);
+
+      cardsEditor.appendChild(box);
+    });
+  }
+  document.getElementById("addCard").addEventListener("click", function () {
+    if (content.cards.length >= 6) { showToast("الحد الأقصى ٦ بطاقات", true); return; }
+    content.cards.push({ icon: "star", title: "بطاقة جديدة", text: "" });
+    renderCardsEditor(); pushPreview();
+  });
+
+  // ---- links editor ----
+  var linksEditor = document.getElementById("linksEditor");
+  function renderLinksEditor() {
+    linksEditor.innerHTML = "";
+    content.links.forEach(function (lnk, i) {
+      var box = document.createElement("div");
+      box.className = "mini-card";
+
+      var head = document.createElement("div");
+      head.className = "mini-head";
+      var title = document.createElement("span");
+      title.textContent = "رابط " + (i + 1);
+      var rm = document.createElement("button");
+      rm.className = "rm"; rm.type = "button"; rm.textContent = "حذف";
+      rm.addEventListener("click", function () { content.links.splice(i, 1); renderLinksEditor(); pushPreview(); });
+      head.appendChild(title); head.appendChild(rm);
+      box.appendChild(head);
+
+      var row = document.createElement("div");
+      row.className = "row2";
+      var lLabel = document.createElement("label");
+      lLabel.className = "f"; lLabel.innerHTML = "<span>الاسم</span>";
+      var iLabel = document.createElement("input");
+      iLabel.type = "text"; iLabel.value = lnk.label || "";
+      iLabel.addEventListener("input", function () { lnk.label = iLabel.value; pushPreview(); });
+      lLabel.appendChild(iLabel);
+
+      var lIcon = document.createElement("label");
+      lIcon.className = "f"; lIcon.innerHTML = "<span>الأيقونة</span>";
+      lIcon.appendChild(iconSelect("link" + i, lnk.icon, function (v) { lnk.icon = v; }));
+      row.appendChild(lLabel); row.appendChild(lIcon);
+      box.appendChild(row);
+
+      var lUrl = document.createElement("label");
+      lUrl.className = "f"; lUrl.innerHTML = "<span>الرابط (https:// أو mailto:)</span>";
+      var iUrl = document.createElement("input");
+      iUrl.type = "text"; iUrl.dir = "ltr"; iUrl.value = lnk.url || "";
+      iUrl.addEventListener("input", function () { lnk.url = iUrl.value; pushPreview(); });
+      lUrl.appendChild(iUrl);
+      box.appendChild(lUrl);
+
+      var lStyle = document.createElement("label");
+      lStyle.className = "f"; lStyle.innerHTML = "<span>الشكل</span>";
+      var sel = document.createElement("select");
+      [["solid", "زر معبّأ"], ["ghost", "زر شفاف"]].forEach(function (opt) {
+        var o = document.createElement("option");
+        o.value = opt[0]; o.textContent = opt[1];
+        if (opt[0] === lnk.style) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.addEventListener("change", function () { lnk.style = sel.value; pushPreview(); });
+      lStyle.appendChild(sel);
+      box.appendChild(lStyle);
+
+      linksEditor.appendChild(box);
+    });
+  }
+  document.getElementById("addLink").addEventListener("click", function () {
+    if (content.links.length >= 6) { showToast("الحد الأقصى ٦ روابط", true); return; }
+    content.links.push({ icon: "link", label: "رابط جديد", url: "https://", style: "ghost" });
+    renderLinksEditor(); pushPreview();
+  });
+
+  renderCardsEditor();
+  renderLinksEditor();
+
+  // ---- live preview ----
+  var debounce = null;
+  function pushPreview() {
+    clearTimeout(debounce);
+    debounce = setTimeout(function () {
+      if (frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: "ali-preview", content: content }, location.origin);
+      }
+    }, 120);
+  }
+  frame.addEventListener("load", function () { setTimeout(pushPreview, 150); });
+
+  document.querySelectorAll(".devbtns button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".devbtns button").forEach(function (b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      holder.classList.toggle("mobile", btn.getAttribute("data-dev") === "mobile");
+    });
+  });
+
+  // ---- save / reset ----
+  document.getElementById("saveBtn").addEventListener("click", function () {
+    fetch("/admin/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(content)
+    }).then(function (r) {
+      if (r.status === 401) { location.href = "/admin/login"; return null; }
+      return r.json();
+    }).then(function (data) {
+      if (!data) return;
+      if (data.ok) {
+        content = data.content;
+        showToast("انحفظت التغييرات ✓");
+        frame.contentWindow.location.reload();
+      } else {
+        showToast("صار خطأ بالحفظ", true);
+      }
+    }).catch(function () { showToast("ما اكو اتصال بالسيرفر", true); });
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", function () {
+    if (!confirm("ترجع كل المحتوى للوضع الافتراضي؟")) return;
+    fetch("/admin/reset", { method: "POST" }).then(function (r) { return r.json(); }).then(function (data) {
+      if (data && data.ok) { location.reload(); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
