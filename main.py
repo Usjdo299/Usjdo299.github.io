@@ -78,14 +78,39 @@ async def security_headers(request: Request, call_next):
     return response
 
 
-def load_content() -> dict:
-    if not CONTENT_FILE.exists():
-        save_content(DEFAULT_CONTENT)
-        return copy.deepcopy(DEFAULT_CONTENT)
+# --- storage: Vercel KV (Upstash Redis REST) when configured, local file otherwise ---
+KV_URL = os.environ.get("KV_REST_API_URL", "").rstrip("/")
+KV_TOKEN = os.environ.get("KV_REST_API_TOKEN", "")
+KV_KEY = "site_content"
+
+
+def kv_enabled() -> bool:
+    return bool(KV_URL and KV_TOKEN)
+
+
+def kv_get():
+    import urllib.request
+    req = urllib.request.Request(KV_URL + "/get/" + KV_KEY, headers={"Authorization": "Bearer " + KV_TOKEN})
+    with urllib.request.urlopen(req, timeout=5) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    result = data.get("result")
+    if not result:
+        return None
     try:
-        data = json.loads(CONTENT_FILE.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return copy.deepcopy(DEFAULT_CONTENT)
+        return json.loads(result)
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+
+def kv_set(payload: dict) -> None:
+    import urllib.request
+    body = json.dumps(["SET", KV_KEY, json.dumps(payload, ensure_ascii=False)]).encode("utf-8")
+    req = urllib.request.Request(KV_URL, data=body, headers={"Authorization": "Bearer " + KV_TOKEN, "Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=5) as resp:
+        resp.read()
+
+
+def merge_with_defaults(data: dict) -> dict:
     merged = copy.deepcopy(DEFAULT_CONTENT)
     for key, value in data.items():
         if key in merged and value not in (None, ""):
@@ -93,8 +118,31 @@ def load_content() -> dict:
     return merged
 
 
+def load_content() -> dict:
+    if kv_enabled():
+        try:
+            data = kv_get()
+            if data:
+                return merge_with_defaults(data)
+        except Exception:
+            pass
+    if not CONTENT_FILE.exists():
+        return copy.deepcopy(DEFAULT_CONTENT)
+    try:
+        data = json.loads(CONTENT_FILE.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return copy.deepcopy(DEFAULT_CONTENT)
+    return merge_with_defaults(data)
+
+
 def save_content(data: dict) -> None:
-    CONTENT_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    if kv_enabled():
+        kv_set(data)
+        return
+    try:
+        CONTENT_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except OSError:
+        pass  # read-only filesystem (e.g. serverless without KV)
 
 
 def clean_content(payload: dict) -> dict:
