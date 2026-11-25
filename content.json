@@ -1,0 +1,45 @@
+{
+  "siteTitle": "Ali Nolan — Programmer · Basra, Iraq",
+  "firstName": "Ali",
+  "lastName": "Nolan",
+  "arabicName": "علي نولان",
+  "kicker": "Personal Website",
+  "bio": "Programmer and technology enthusiast based in Basra, Iraq. I enjoy building things with code and exploring how software can solve real problems. This is my small corner of the internet.",
+  "aboutTitle": "A quiet corner of the internet",
+  "aboutP1": "I'm Ali, a programmer from Basra, in the south of Iraq. I like making ideas work through code — from small scripts to full projects — and I'm always curious about new tools, systems, and where technology is heading next.",
+  "aboutP2": "Lately I've been exploring automotive programming and ECU diagnostics — learning how cars think, one system at a time.",
+  "focusTitle": "What I spend my time on",
+  "factLocation": "Basra, Iraq",
+  "factCraft": "Programming & technology",
+  "factLearning": "Car / ECU programming",
+  "contactTitle": "Let's talk",
+  "contactText": "The easiest way to reach me is through GitHub — you'll find my work and projects there.",
+  "footerAr": "أهلاً وسهلاً",
+  "footerText": "© 2026 Ali Nolan · Basra, Iraq",
+  "accent": "#9a7434",
+  "cards": [
+    {
+      "icon": "code",
+      "title": "Code",
+      "text": "Writing software is my craft — from small scripts to full projects, I like making ideas work."
+    },
+    {
+      "icon": "globe",
+      "title": "Technology",
+      "text": "Always curious about new tools, systems, and where technology is heading next."
+    },
+    {
+      "icon": "car",
+      "title": "Cars & ECUs",
+      "text": "Learning how modern vehicles think: sensors, actuators, diagnostics and ECU programming."
+    }
+  ],
+  "links": [
+    {
+      "icon": "github",
+      "label": "GitHub",
+      "url": "https://github.com/Usjdo299",
+      "style": "solid"
+    }
+  ]
+}
